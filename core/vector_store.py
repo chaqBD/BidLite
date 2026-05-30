@@ -69,14 +69,14 @@ def search_similar(client: QdrantClient, query_vector: list[float],
         filt = Filter(must=[
             FieldCondition(key="bidder", match=MatchAny(any=bidder_filter))
         ])
-    results = client.search(
+    results = client.query_points(
         collection_name=COLLECTION,
-        query_vector=query_vector,
+        query=query_vector,
         limit=top_k,
         query_filter=filt,
         with_payload=True,
     )
-    return [{"score": r.score, **r.payload} for r in results]
+    return [{"score": r.score, **r.payload} for r in results.points]
 
 
 def get_all_items(client: QdrantClient) -> pd.DataFrame:

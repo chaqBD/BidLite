@@ -10,13 +10,15 @@ similar items even if exact spec strings differ across bid documents.
 import streamlit as st
 import plotly.express as px
 import pandas as pd
+from core.theme import inject_theme
 
-st.set_page_config(page_title="Semantic Search · BidLite", layout="wide")
-st.title("🧠 Semantic Bid Item Search")
-st.caption(
-    "Powered by Qdrant vector search. Find relevant line items by meaning — "
-    "no exact keyword match required. Useful for cross-referencing items across "
-    "differently formatted bids or historical procurement data."
+st.set_page_config(page_title="Semantic Search · BidLite", page_icon="⚡", layout="wide")
+inject_theme()
+st.markdown(
+    '<div class="bl-hero"><h1>🧠 Semantic Bid Item Search</h1>'
+    '<p class="subtitle">Powered by Qdrant vector search — find relevant line items by meaning, '
+    'not keywords. Cross-reference items across differently formatted bids.</p></div>',
+    unsafe_allow_html=True,
 )
 
 df = st.session_state.get("df")
@@ -102,6 +104,9 @@ fig.update_layout(
     margin=dict(l=20, r=60),
     yaxis=dict(autorange="reversed"),
     xaxis_range=[0, 1.1],
+    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+    font_color="#c9d1d9",
+    xaxis=dict(gridcolor="rgba(255,255,255,0.05)"),
 )
 st.plotly_chart(fig, use_container_width=True)
 
@@ -130,5 +135,10 @@ if "unit_price" in results_df.columns and results_df["unit_price"].notna().any()
         points="all",
         labels={"bidder": "Bidder", "unit_price": "Unit Price ($/LF)"},
     )
-    fig2.update_layout(height=320, showlegend=False, margin=dict(t=20))
+    fig2.update_layout(
+        height=320, showlegend=False, margin=dict(t=20),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font_color="#c9d1d9",
+        yaxis=dict(gridcolor="rgba(255,255,255,0.05)"),
+    )
     st.plotly_chart(fig2, use_container_width=True)

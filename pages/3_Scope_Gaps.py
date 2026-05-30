@@ -11,12 +11,15 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
+from core.theme import inject_theme
 
-st.set_page_config(page_title="Scope Gaps · BidLite", layout="wide")
-st.title("🗺️ Scope Gap Analysis")
-st.caption(
-    "A 'Missing' cell means the bidder did not price that item. "
-    "'N/A' means the bidder explicitly excluded it. Both require resolution before award."
+st.set_page_config(page_title="Scope Gaps · BidLite", page_icon="⚡", layout="wide")
+inject_theme()
+st.markdown(
+    '<div class="bl-hero"><h1>🗺️ Scope Gap Analysis</h1>'
+    '<p class="subtitle">Coverage heatmap — identify which bidders priced which items. '
+    'Missing or N/A cells must be resolved before award.</p></div>',
+    unsafe_allow_html=True,
 )
 
 df = st.session_state.get("df")
@@ -47,7 +50,7 @@ st.divider()
 st.subheader("Coverage Heatmap")
 
 status_map = {"Priced": 2, "N/A": 1, "Missing": 0}
-z_matrix = gap[bidder_cols].applymap(lambda v: status_map.get(v, 0)).values
+z_matrix = gap[bidder_cols].map(lambda v: status_map.get(v, 0)).values
 labels = (gap["item_no"].astype(str) + ": " + gap["description"].str[:40]).tolist()
 
 colorscale = [
@@ -73,6 +76,9 @@ fig.update_layout(
     margin=dict(l=340, t=30, b=30),
     yaxis=dict(autorange="reversed"),
     xaxis_side="top",
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    font_color="#c9d1d9",
 )
 st.plotly_chart(fig, use_container_width=True)
 
@@ -91,7 +97,11 @@ fig2 = px.bar(
     x="Bidder", y="Count", color="Status", barmode="stack",
     color_discrete_map={"Priced": "#70ad47", "Missing": "#ff0000", "N/A": "#ffc000"},
 )
-fig2.update_layout(height=320, margin=dict(t=20))
+fig2.update_layout(
+    height=320, margin=dict(t=20),
+    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+    font_color="#c9d1d9",
+)
 st.plotly_chart(fig2, use_container_width=True)
 
 # ── Missing items list ────────────────────────────────────────────────────────

@@ -7,9 +7,11 @@ import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
+from core.theme import inject_theme
 
-st.set_page_config(page_title="Price Comparison · BidLite", layout="wide")
-st.title("📊 Item-by-Item Price Comparison")
+st.set_page_config(page_title="Price Comparison · BidLite", page_icon="⚡", layout="wide")
+inject_theme()
+st.markdown('<div class="bl-hero"><h1>📊 Item-by-Item Price Comparison</h1><p class="subtitle">Unit price variance and spread heatmap across all bidders</p></div>', unsafe_allow_html=True)
 
 df = st.session_state.get("df")
 if df is None or df.empty:
@@ -57,7 +59,7 @@ fig = px.bar(
     y="Unit Price",
     color="Bidder",
     barmode="group",
-    color_discrete_sequence=px.colors.qualitative.Bold,
+    color_discrete_sequence=["#00d4aa","#1e88e5","#f4a261","#e76f51","#a8dadc","#457b9d"],
     labels={"label": "Line Item", "Unit Price": "Unit Price ($/LF)"},
 )
 fig.update_layout(
@@ -65,6 +67,11 @@ fig.update_layout(
     height=480,
     legend_title="Bidder",
     margin=dict(b=120),
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    font_color="#c9d1d9",
+    yaxis=dict(gridcolor="rgba(255,255,255,0.05)"),
+    xaxis=dict(gridcolor="rgba(255,255,255,0.05)"),
 )
 st.plotly_chart(fig, use_container_width=True)
 
@@ -82,7 +89,11 @@ fig2 = px.imshow(
     aspect="auto",
     labels={"color": "Unit Price"},
 )
-fig2.update_layout(height=max(300, len(heat_data) * 22), margin=dict(l=280))
+fig2.update_layout(
+    height=max(300, len(heat_data) * 22), margin=dict(l=280),
+    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+    font_color="#c9d1d9",
+)
 st.plotly_chart(fig2, use_container_width=True)
 
 # ── Detail table ──────────────────────────────────────────────────────────────

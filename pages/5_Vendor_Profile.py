@@ -11,12 +11,15 @@ import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 import numpy as np
+from core.theme import inject_theme
 
-st.set_page_config(page_title="Vendor Profile · BidLite", layout="wide")
-st.title("🎯 Vendor Profiles & Competitive Positioning")
-st.caption(
-    "Multi-dimensional vendor scoring across price, coverage, consistency, "
-    "bid validity, and risk. Use this to build your award recommendation."
+st.set_page_config(page_title="Vendor Profile · BidLite", page_icon="⚡", layout="wide")
+inject_theme()
+st.markdown(
+    '<div class="bl-hero"><h1>🎯 Vendor Profiles &amp; Competitive Positioning</h1>'
+    '<p class="subtitle">Multi-dimensional scoring across price, coverage, consistency, '
+    'bid validity, and warranty risk — build your award recommendation.</p></div>',
+    unsafe_allow_html=True,
 )
 
 df = st.session_state.get("df")
@@ -80,9 +83,16 @@ for i, bidder in enumerate(selected_bidders):
     ))
 
 fig.update_layout(
-    polar=dict(radialaxis=dict(visible=True, range=[0, 110])),
+    polar=dict(
+        radialaxis=dict(visible=True, range=[0, 110], gridcolor="rgba(255,255,255,0.08)", color="#7a8899"),
+        angularaxis=dict(color="#c9d1d9"),
+        bgcolor="rgba(0,0,0,0)",
+    ),
     showlegend=True,
     height=520,
+    paper_bgcolor="rgba(0,0,0,0)",
+    font_color="#c9d1d9",
+    legend=dict(bgcolor="rgba(0,0,0,0)"),
 )
 st.plotly_chart(fig, use_container_width=True)
 
@@ -101,7 +111,13 @@ fig2 = px.scatter(
     size_max=50,
 )
 fig2.update_traces(textposition="top center", textfont_size=13)
-fig2.update_layout(height=420, showlegend=False, margin=dict(t=30))
+fig2.update_layout(
+    height=420, showlegend=False, margin=dict(t=30),
+    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+    font_color="#c9d1d9",
+    xaxis=dict(gridcolor="rgba(255,255,255,0.05)"),
+    yaxis=dict(gridcolor="rgba(255,255,255,0.05)"),
+)
 fig2.update_xaxes(tickformat="$,.0f")
 st.plotly_chart(fig2, use_container_width=True)
 
