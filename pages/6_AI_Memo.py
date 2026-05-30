@@ -42,10 +42,15 @@ gap        = scope_gap_matrix(df)
 bidder_cols = [b for b in BIDDERS if b in gap.columns]
 
 # ── Savings estimator ─────────────────────────────────────────────────────────
-high_anom = anomalies[anomalies["direction"] == "HIGH"].copy()
-high_anom["saving_per_unit"] = high_anom["unit_price"] - high_anom["item_mean"]
-high_anom["est_saving"] = high_anom["saving_per_unit"] * high_anom["qty"].fillna(0)
-savings_estimate = high_anom["est_saving"].sum()
+if not anomalies.empty and "direction" in anomalies.columns:
+    high_anom = anomalies[anomalies["direction"] == "HIGH"].copy()
+else:
+    high_anom = pd.DataFrame(columns=["unit_price", "item_mean", "qty", "est_saving", "saving_per_unit"])
+
+if not high_anom.empty:
+    high_anom["saving_per_unit"] = high_anom["unit_price"] - high_anom["item_mean"]
+    high_anom["est_saving"] = high_anom["saving_per_unit"] * high_anom["qty"].fillna(0)
+savings_estimate = high_anom["est_saving"].sum() if "est_saving" in high_anom.columns else 0.0
 
 # Scope gap summary
 missing_cells = int((gap[bidder_cols] == "Missing").sum().sum())

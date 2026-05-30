@@ -80,7 +80,11 @@ def detect_price_anomalies(df: pd.DataFrame, z_threshold: float = 1.8) -> pd.Dat
                 "direction": direction if z > z_threshold else "normal",
             })
     result = pd.DataFrame(records)
-    return result[result["anomaly"]] if not result.empty else result
+    if result.empty:
+        # Return typed empty DataFrame so callers can safely access column names
+        empty_cols = list(df.columns) + ["item_mean", "item_std", "z_score", "anomaly", "direction"]
+        return pd.DataFrame(columns=empty_cols)
+    return result[result["anomaly"]].reset_index(drop=True)
 
 
 # ── Scope Gap ─────────────────────────────────────────────────────────────────

@@ -113,14 +113,18 @@ st.caption(
     "the estimated total saving is:"
 )
 
-high_anom = anomalies[anomalies["direction"] == "HIGH"].copy()
+high_anom = (
+    anomalies[anomalies["direction"] == "HIGH"].copy()
+    if not anomalies.empty and "direction" in anomalies.columns
+    else pd.DataFrame()
+)
 if not high_anom.empty:
     high_anom["saving_per_unit"] = high_anom["unit_price"] - high_anom["item_mean"]
     high_anom["est_saving"] = high_anom["saving_per_unit"] * high_anom["qty"].fillna(0)
     total_saving = high_anom["est_saving"].sum()
 
     s1, s2, s3 = st.columns(3)
-    s1.metric("Overpriced Flags",        int((anomalies["direction"] == "HIGH").sum()))
+    s1.metric("Overpriced Flags",        len(high_anom))
     s2.metric("Max Single-Item Saving",  f"${high_anom['est_saving'].max():,.0f}")
     s3.metric("Total Estimated Saving",  f"${total_saving:,.0f}",
               "if all HIGH anomalies → market mean")

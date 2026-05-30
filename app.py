@@ -55,6 +55,15 @@ with st.sidebar:
             "Upload QCS (.xlsx or .pdf)",
             type=["xlsx", "xls", "pdf"],
         )
+        project_label = st.text_input(
+            "Project name",
+            value=st.session_state.get("project_label", ""),
+            placeholder="e.g. Project Alpha — Cable Supply",
+        )
+    else:
+        project_label = "Project Bimbi"
+
+    st.session_state["project_label"] = project_label
 
     st.divider()
     if st.button("🔄 Reset & Re-index", use_container_width=True):
@@ -148,12 +157,13 @@ high = totals.iloc[-1]
 spread = totals["total_bid"].max() - totals["total_bid"].min()
 
 # ── Hero banner ───────────────────────────────────────────────────────────────
+display_project = project_label or "Untitled Project"
 st.markdown(
     f"""
     <div class="bl-hero">
         <h1>⚡ BidLite — Procurement Bid Intelligence</h1>
         <p class="subtitle">
-            Project Bimbi &nbsp;·&nbsp; {df['item_no'].nunique()} line items
+            {display_project} &nbsp;·&nbsp; {df['item_no'].nunique()} line items
             &nbsp;·&nbsp; {df['bidder'].nunique()} bidders
             &nbsp;·&nbsp; ${df['total_price'].sum():,.0f} USD total market
             &nbsp;·&nbsp; {len(anomalies)} price anomalies detected

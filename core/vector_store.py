@@ -19,6 +19,7 @@ from qdrant_client.models import (
     FieldCondition,
     MatchValue,
     MatchAny,
+    PayloadSchemaType,
 )
 from core.embedder import DIMS
 
@@ -33,6 +34,18 @@ def get_client() -> QdrantClient:
     return QdrantClient(url=url, api_key=api_key)
 
 
+def _ensure_payload_index(client: QdrantClient) -> None:
+    """Create KEYWORD index on 'bidder' so filtered queries work without error."""
+    try:
+        client.create_payload_index(
+            collection_name=COLLECTION,
+            field_name="bidder",
+            field_schema=PayloadSchemaType.KEYWORD,
+        )
+    except Exception:
+        pass  # Already exists or collection not yet ready
+
+
 def ensure_collection(client: QdrantClient) -> None:
     existing = [c.name for c in client.get_collections().collections]
     if COLLECTION not in existing:
@@ -40,6 +53,7 @@ def ensure_collection(client: QdrantClient) -> None:
             collection_name=COLLECTION,
             vectors_config=VectorParams(size=DIMS, distance=Distance.COSINE),
         )
+    _ensure_payload_index(client)
 
 
 def upsert_items(client: QdrantClient, df: pd.DataFrame, vectors: list[list[float]]) -> int:
@@ -64,6 +78,8 @@ def search_similar(client: QdrantClient, query_vector: list[float],
                    top_k: int = 10,
                    bidder_filter: list[str] | None = None) -> list[dict]:
     """Semantic search: return top-k most similar items."""
+    # Ensures KEYWORD index on 'bidder' exists even on pre-existing collections
+    _ensure_payload_index(client)
     filt = None
     if bidder_filter:
         filt = Filter(must=[

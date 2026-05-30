@@ -98,8 +98,10 @@ st.plotly_chart(fig, use_container_width=True)
 
 # ── Bubble chart: price vs overall score ─────────────────────────────────────
 st.subheader("Price vs Score Positioning")
+bubble_df = merged.copy()
+bubble_df["coverage_score"] = bubble_df["coverage_score"].fillna(0).clip(lower=1)
 fig2 = px.scatter(
-    merged,
+    bubble_df,
     x="total_bid",
     y="overall_score",
     size="coverage_score",

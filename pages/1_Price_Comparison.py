@@ -30,15 +30,16 @@ with col2:
     spec_options = ["All"] + sorted(pivot["spec_code"].dropna().unique().tolist())
     spec_filter = st.selectbox("Filter by spec code", spec_options)
 with col3:
-    sort_by = st.selectbox("Sort by", ["item_no", "spread_pct", "avg_price"])
+    sort_options = [c for c in ["item_no", "spread_pct", "avg_price"] if c in pivot.columns]
+    sort_by = st.selectbox("Sort by", sort_options or ["item_no"])
 
-mask = pd.Series([True] * len(pivot))
+mask = pd.Series([True] * len(pivot), index=pivot.index)
 if search:
     mask &= pivot["description"].str.contains(search, case=False, na=False)
 if spec_filter != "All":
     mask &= pivot["spec_code"] == spec_filter
 
-filtered = pivot[mask].sort_values(sort_by, ascending=True)
+filtered = pivot[mask].sort_values(sort_by, ascending=True, na_position="last")
 
 # ── Grouped bar chart: unit prices per item per bidder ────────────────────────
 st.subheader("Unit Price Comparison ($/LF)")
