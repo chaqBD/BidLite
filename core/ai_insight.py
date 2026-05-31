@@ -3,17 +3,14 @@ GPT-powered interpretation of BidLite's ML price predictions.
 The model gives numbers; GPT gives procurement wisdom.
 """
 
-import os
 import openai
-from dotenv import load_dotenv
-
-load_dotenv()
+from core.env import get_env
 
 MODEL = "gpt-4o-mini"
 
 
 def _client() -> openai.OpenAI:
-    key = os.getenv("OPENAI_API_KEY")
+    key = get_env("OPENAI_API_KEY")
     if not key:
         raise ValueError("OPENAI_API_KEY not set")
     return openai.OpenAI(api_key=key)

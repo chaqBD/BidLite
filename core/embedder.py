@@ -6,12 +6,9 @@ semantically similar items (across different description formats)
 cluster close together in vector space.
 """
 
-import os
 from typing import Optional
 import openai
-from dotenv import load_dotenv
-
-load_dotenv()
+from core.env import get_env
 
 _client: Optional[openai.OpenAI] = None
 MODEL = "text-embedding-3-small"
@@ -21,7 +18,7 @@ DIMS = 1536
 def _get_client() -> openai.OpenAI:
     global _client
     if _client is None:
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = get_env("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("OPENAI_API_KEY not set in environment / .env file")
         _client = openai.OpenAI(api_key=api_key)

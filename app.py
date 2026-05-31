@@ -6,7 +6,7 @@ Author: Shakir  |  Qdrant Hackathon 2026
 import os
 import streamlit as st
 import pandas as pd
-from dotenv import load_dotenv
+from core.env import get_env   # handles both .env and Streamlit Cloud secrets
 
 from core.parser import load_sample_data, parse_excel, parse_pdf_text
 from core.embedder import item_to_text, embed_texts
@@ -17,8 +17,6 @@ from core.vector_store import (
     drop_collection,
 )
 from core.theme import inject_theme
-
-load_dotenv()
 
 st.set_page_config(
     page_title="BidLite · Procurement Intelligence",
@@ -140,7 +138,7 @@ if df.empty:
 
 st.session_state["df"] = df
 
-if os.getenv("OPENAI_API_KEY"):
+if get_env("OPENAI_API_KEY"):
     if "indexed" not in st.session_state:
         st.session_state["indexed"] = index_data(df)
 else:

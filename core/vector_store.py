@@ -6,10 +6,9 @@ Each bid line item is stored as a point with:
   - payload: full item metadata for filtering and display
 """
 
-import os
 import uuid
 import pandas as pd
-from dotenv import load_dotenv
+from core.env import get_env
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance,
@@ -23,14 +22,12 @@ from qdrant_client.models import (
 )
 from core.embedder import DIMS
 
-load_dotenv()
-
-COLLECTION = os.getenv("QDRANT_COLLECTION", "bidlite")
+COLLECTION = get_env("QDRANT_COLLECTION", "bidlite")
 
 
 def get_client() -> QdrantClient:
-    url = os.getenv("QDRANT_URL", "http://localhost:6333")
-    api_key = os.getenv("QDRANT_API_KEY") or None
+    url = get_env("QDRANT_URL", "http://localhost:6333")
+    api_key = get_env("QDRANT_API_KEY") or None
     return QdrantClient(url=url, api_key=api_key)
 
 

@@ -10,6 +10,7 @@ ready to attach to an award package.
 import streamlit as st
 import pandas as pd
 from core.theme import inject_theme
+from core.env import get_env
 
 st.set_page_config(page_title="AI Award Memo · BidLite", page_icon="⚡", layout="wide")
 inject_theme()
@@ -90,7 +91,7 @@ st.divider()
 
 # ── Generate button ───────────────────────────────────────────────────────────
 import os
-can_generate = bool(os.getenv("OPENAI_API_KEY"))
+can_generate = bool(get_env("OPENAI_API_KEY"))
 
 if not can_generate:
     st.warning("OpenAI API key required to generate memo. Add it to .env.")

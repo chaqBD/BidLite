@@ -3,18 +3,15 @@ AI-powered award recommendation memo generator.
 Uses GPT-4o-mini to produce a professional procurement memo from bid analytics.
 """
 
-import os
 import datetime
 import openai
-from dotenv import load_dotenv
-
-load_dotenv()
+from core.env import get_env
 
 MODEL = "gpt-4o-mini"
 
 
 def _get_client() -> openai.OpenAI:
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = get_env("OPENAI_API_KEY")
     if not api_key:
         raise ValueError("OPENAI_API_KEY not set")
     return openai.OpenAI(api_key=api_key)

@@ -17,8 +17,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
-import os
 from core.theme import inject_theme
+from core.env import get_env
 
 st.set_page_config(
     page_title="Predictive Analytics · BidLite",
@@ -49,7 +49,7 @@ if df is None or df.empty:
     st.stop()
 
 indexed = st.session_state.get("indexed", False)
-has_openai = bool(os.getenv("OPENAI_API_KEY"))
+has_openai = bool(get_env("OPENAI_API_KEY"))
 project_name = st.session_state.get("project_label", "Current Project")
 
 # ── Technique explanation ─────────────────────────────────────────────────────
@@ -95,10 +95,9 @@ def run_knn(df_hash):
     from core.vector_store import get_client
     from core.embedder import embed_single
     from core.predictor import build_item_df, qdrant_knn_predict
-    import os
     item_df = build_item_df(df)
     client = get_client()
-    collection = os.getenv("QDRANT_COLLECTION", "bidlite")
+    collection = get_env("QDRANT_COLLECTION", "bidlite")
     return qdrant_knn_predict(item_df, client, embed_single, collection, k=15)
 
 df_hash = str(len(df)) + str(df["total_price"].sum())
