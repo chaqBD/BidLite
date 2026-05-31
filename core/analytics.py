@@ -1,6 +1,14 @@
 """
 Procurement analytics computed on top of the bid DataFrame.
-All functions return plain DataFrames or dicts — no UI logic here.
+
+All functions are pure data transforms — no Streamlit or UI logic here.
+Each function receives a normalised DataFrame (output of core/parser.py)
+and returns a DataFrame or dict ready for charting or agent consumption.
+
+Scoring model weights (vendor_scorecard):
+  Price competitiveness  40% — inverse rank of total bid value
+  Coverage completeness  30% — % of items actually priced
+  Price consistency      30% — inverse of coefficient of variation
 """
 
 import numpy as np
@@ -56,15 +64,21 @@ def detect_price_anomalies(df: pd.DataFrame, z_threshold: float = 1.8) -> pd.Dat
     For each line item, flag bidders whose unit price deviates more than
     z_threshold standard deviations from the item mean.
     Returns rows with anomaly=True only.
+
+    Z-score = |bid_price − item_mean| / item_std_dev
+    A threshold of 1.8 catches ~93% of true outliers while keeping false
+    positives low for typical 4-6 bidder procurement datasets.
     """
     records = []
     for item_no, group in df.groupby("item_no"):
         prices = group["unit_price"].dropna()
         if len(prices) < 3:
+            # Need at least 3 bids to compute a meaningful standard deviation
             continue
         mean = prices.mean()
         std = prices.std()
         if std == 0:
+            # All bidders priced identically — no anomaly possible
             continue
         for _, row in group.iterrows():
             if pd.isna(row["unit_price"]):
@@ -124,11 +138,16 @@ def vendor_scorecard(df: pd.DataFrame) -> pd.DataFrame:
       - Price competitiveness (40%): inverse rank of total bid
       - Coverage completeness (30%): % items priced
       - Price consistency (30%): inverse of coefficient of variation across items
+
+    The three dimensions deliberately avoid double-counting: price rank
+    captures total cost, coverage captures scope completeness, and
+    consistency (low CV) rewards vendors who price all items competitively
+    rather than gaming a few headline items.
     """
     totals = total_bid_summary(df)
     n_bidders = len(totals)
 
-    # Price rank score: lowest bidder = 100, highest = 0
+    # Rank 1 (lowest bid) → 100 pts; rank N (highest) → 0 pts; linear interpolation
     totals["price_score"] = (n_bidders - totals["rank"]) / (n_bidders - 1) * 100
 
     # Coverage

@@ -111,15 +111,19 @@ def ridge_predict(item_df: pd.DataFrame) -> pd.DataFrame:
     result = item_df.copy()
 
     X = extract_features(item_df).values
-    y = np.log1p(item_df["mean_price"].values)   # log-transform for linear fit
+    # Log-transform prices so the linear model fits multiplicative price relationships
+    # (e.g. doubling conductor size roughly doubles price — log-linear is appropriate)
+    y = np.log1p(item_df["mean_price"].values)
 
     scaler = StandardScaler()
-    X_s = scaler.fit_transform(X)
+    X_s = scaler.fit_transform(X)   # z-score normalisation so Ridge penalty is fair
 
-    model = Ridge(alpha=0.5)
+    model = Ridge(alpha=0.5)        # mild L2 regularisation prevents overfitting on ~25 items
     loo = LeaveOneOut()
     preds = np.zeros(len(y))
 
+    # LOO-CV: for N items, train on N-1 and predict the held-out item.
+    # Every prediction is therefore genuinely out-of-sample — no data leakage.
     for tr, te in loo.split(X_s):
         model.fit(X_s[tr], y[tr])
         preds[te] = model.predict(X_s[te])
@@ -155,11 +159,20 @@ def qdrant_knn_predict(
     k: int = 15,
 ) -> pd.DataFrame:
     """
-    For each item, retrieve K semantic nearest neighbours from Qdrant
-    (excluding the item itself) and return a similarity-score-weighted
-    average unit price.
+    Qdrant KNN Regression — Qdrant used as an ML prediction engine.
 
-    This uses Qdrant as an ML prediction engine — not just a search index.
+    For each item, retrieve K semantic nearest neighbours from the vector
+    index and compute a similarity-score-weighted average price:
+
+        predicted_price = Σ(cosine_score_i × unit_price_i) / Σ(cosine_score_i)
+
+    This is KNN regression where the Qdrant similarity score (0–1 cosine)
+    serves as the regression weight. Items that are semantically close to
+    many priced items receive confident predictions; unusual items with few
+    close neighbours produce wider uncertainty (flagged by ensemble_predict).
+
+    Self-matches (same item_no) are excluded in Python rather than with a
+    Qdrant filter to avoid requiring an item_no payload index.
     """
     from qdrant_client.models import Filter, FieldCondition, MatchValue
 
@@ -176,15 +189,16 @@ def qdrant_knn_predict(
         try:
             vec = embed_fn(query_text)
 
-            # Get neighbours; exclude same item_no in Python (simpler than filter)
+            # Fetch k+6 to have buffer after self-match removal
+            # (each item has 6 entries in Qdrant — one per bidder)
             hits = client.query_points(
                 collection_name=collection,
                 query=vec,
-                limit=k + 6,          # +6 to account for self-matches
+                limit=k + 6,
                 with_payload=True,
             ).points
 
-            # Filter out self-matches (same item_no)
+            # Remove self-matches (same item_no) and invalid prices
             neighbours = [
                 h for h in hits
                 if h.payload.get("item_no") != row["item_no"]
@@ -196,6 +210,7 @@ def qdrant_knn_predict(
                 knn_preds.append(None)
                 continue
 
+            # Similarity-weighted average — the core KNN regression formula
             weights = np.array([h.score for h in neighbours])
             prices  = np.array([h.payload["unit_price"] for h in neighbours])
             knn_preds.append(float(np.average(prices, weights=weights)))

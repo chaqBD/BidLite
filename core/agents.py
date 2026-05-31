@@ -263,6 +263,9 @@ Top priority items:
 # AGENT 4: Award Committee Agent  (the wow factor)
 # ──────────────────────────────────────────────────────────────────────────────
 
+# Committee weight definitions — each committee prioritises differently.
+# The deliberate disagreement between committees (e.g. Finance vs Engineering)
+# is what makes the ACA output realistic: real award committees rarely agree instantly.
 _COMMITTEE_DEFS = {
     "Finance":     {"weights": {"price": 0.70, "coverage": 0.20, "risk_adj": 0.10},
                     "priority": "minimise total cost"},
@@ -276,7 +279,13 @@ _COMMITTEE_DEFS = {
 
 
 def run_aca(scorecard: pd.DataFrame, ra_result: dict) -> dict:
-    """Simulate four procurement committees each voting for their preferred bidder."""
+    """
+    Simulate four procurement committees each voting for their preferred bidder.
+
+    Each committee scores all bidders using its own weighted formula, then
+    picks the highest scorer. The final consensus is the majority vote.
+    Confidence = 70% base + up to 25% bonus for unanimity.
+    """
     risk_map = {r["bidder"]: r["risk_score"] for r in ra_result["vendor_risks"]}
 
     committee_scores: dict[str, dict[str, float]] = {c: {} for c in _COMMITTEE_DEFS}
@@ -284,28 +293,35 @@ def run_aca(scorecard: pd.DataFrame, ra_result: dict) -> dict:
     for _, row in scorecard.iterrows():
         b   = row["bidder"]
         rs  = risk_map.get(b, 50)
-        adj = (100 - rs) / 100   # risk adjustment factor
+        # Convert risk score (0=safe, 100=risky) to a 0–1 adjustment factor
+        # so higher-risk bidders are penalised in proportion to their risk score
+        adj = (100 - rs) / 100
 
+        # Finance: price-dominant (70%), minor coverage and risk adjustment
         committee_scores["Finance"][b] = (
             row["price_score"]    * 0.70 +
             row.get("coverage_score", 50) * 0.20 +
             adj * 100             * 0.10
         )
+        # Engineering: scope completeness (50%) + price consistency (30%) + risk (20%)
         committee_scores["Engineering"][b] = (
             row.get("coverage_score", 50)    * 0.50 +
             row.get("consistency_score", 50) * 0.30 +
             adj * 100                        * 0.20
         )
+        # Procurement: multi-criteria overall score (70%) + risk-adjusted (30%)
         committee_scores["Procurement"][b] = (
             row["overall_score"]  * 0.70 +
             adj * 100             * 0.30
         )
+        # Executive: balanced — equal weight on price, score, and risk profile
         committee_scores["Executive"][b] = (
             row["price_score"]    * 0.35 +
             row["overall_score"]  * 0.35 +
             adj * 100             * 0.30
         )
 
+    # Each committee picks the bidder with the highest score under its formula
     preferences  = {c: max(scores, key=scores.get) for c, scores in committee_scores.items()}
     vote_counter = Counter(preferences.values())
     consensus    = vote_counter.most_common(1)[0][0]

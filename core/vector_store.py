@@ -1,9 +1,22 @@
 """
 All Qdrant operations for BidLite.
 
-Each bid line item is stored as a point with:
-  - vector: OpenAI text-embedding-3-small (1536-d)
-  - payload: full item metadata for filtering and display
+Each bid line item is stored as a Qdrant point:
+  - id:      random UUID (one point per bidder×item pair)
+  - vector:  OpenAI text-embedding-3-small embedding (1536-d, cosine distance)
+  - payload: full item metadata — item_no, description, spec_code, qty, unit,
+             bidder, unit_price, total_price, definition
+
+Payload index:
+  A KEYWORD index is created on the "bidder" field so that MatchAny filters
+  (used in bidder-filtered semantic searches) work without a 400 error in
+  qdrant-client >= 1.14. The index is created idempotently on every
+  collection access via _ensure_payload_index().
+
+Qdrant is used in three distinct ways in BidLite:
+  1. Semantic search     — query_points() with a natural-language embedding
+  2. KNN regression      — query_points() with item embedding, scores as weights
+  3. Anomaly context     — query_points() for nearest neighbours of anomalous items
 """
 
 import uuid
